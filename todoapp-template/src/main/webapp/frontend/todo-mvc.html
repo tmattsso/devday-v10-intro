@@ -1,0 +1,304 @@
+<link rel="import" href="bower_components/polymer/polymer.html">
+<link rel="import" href="bower_components/vaadin-ordered-layout/vaadin-horizontal-layout.html">
+<link rel="import" href="bower_components/vaadin-button/vaadin-button.html">
+<link rel="import" href="bower_components/polymer/lib/elements/dom-repeat.html">
+<link rel="import" href="bower_components/vaadin-checkbox/vaadin-checkbox.html">
+<link rel="import" href="bower_components/vaadin-text-field/vaadin-text-field.html">
+<link rel="import" href="bower_components/vaadin-ordered-layout/vaadin-vertical-layout.html">
+<link rel="import" href="bower_components/vaadin-notification/vaadin-notification.html">
+
+<dom-module id="todo-mvc">
+    <template>
+        <style>
+            .banner {
+                background: lightyellow;
+                width: 100%;
+                padding: 1em;
+                border: 1px solid gray;
+            }
+
+            .top {
+                text-align: center;
+            }
+        </style>
+        <div class="top banner" hidden$="{{appOnline}}">You are offline
+            <button on-click="goOnline" hidden$="[[!goOnlineVisible]]">Go online</button>
+        </div>
+        <h1>todos</h1>
+        <vaadin-vertical-layout style="width: 100%;max-width: 600px;">
+            <vaadin-horizontal-layout style="width: 100%;">
+                <vaadin-button on-click="selectAll">
+                    All
+                </vaadin-button>
+                <vaadin-text-field style="flex: 1" placeholder="What needs to be done?" on-keyup="newTodoInput"></vaadin-text-field>
+            </vaadin-horizontal-layout>
+            <template is="dom-repeat" items="{{todos}}" filter="{{createFilter(filterString)}}" observe="completed">
+                <vaadin-horizontal-layout style="width: 100%" id="vaadinHorizontalLayout">
+                    <vaadin-checkbox checked="[[item.completed]]" on-checked-changed="markCompletedClick"></vaadin-checkbox>
+                    <vaadin-text-field style="flex:1" value="{{item.text}}" id="vaadinTextField" on-keyup="editTodoText"></vaadin-text-field>
+                    <vaadin-button on-click="removeTodo">
+                        X
+                    </vaadin-button>
+                </vaadin-horizontal-layout>
+            </template>
+            <div style="width: 100%;">
+                {{itemsLeft}} items left
+                <vaadin-horizontal-layout style="flex: 1" id="filterControls">
+                    <vaadin-button on-click="filterAll" disabled="{{isAll(filterString)}}">
+                        All
+                    </vaadin-button>
+                    <vaadin-button on-click="filterActive" disabled="{{isActive(filterString)}}">
+                        Active
+                    </vaadin-button>
+                    <vaadin-button on-click="filterCompleted" disabled="{{isCompleted(filterString)}}">
+                        Completed
+                    </vaadin-button>
+                </vaadin-horizontal-layout>
+                <vaadin-button hidden$="{{!hasCompletedItems(todos.*)}}" on-click="clearCompleted">
+                    Clear completed
+                </vaadin-button>
+            </div>
+        </vaadin-vertical-layout>
+        <div class="banner" hidden$="[[appOnline]]">Debug, pending events:
+            <div inner-h-t-m-l="[[queueDebug]]"></div>
+        </div>
+        <vaadin-notification id="info" delay=2000>
+            <template>Offline changes have been merged</template>
+        </vaadin-notification>
+    </template>
+    <script>
+        class TodoMvc extends Polymer.Element {
+            static get is() {
+                return 'todo-mvc';
+            }
+            static get properties() {
+                // These are purely client side UI logic properties
+                return {
+                    "todos": {
+                        type: Array,
+                        observer: 'storeTodosLocally'
+                    },
+                    "filterString": {
+                        type: String,
+                        value: "all"
+                    },
+                    "itemsLeft": {
+                        type: String,
+                        computed: 'countItemsLeft(todos.*)'
+                    },
+                    "networkOnline": {
+                        type: Boolean,
+                        value: navigator.onLine,
+                        observer: 'onNetworkOnlineChange'
+                    },
+                    "appOnline": {
+                        type: Boolean,
+                        computed: 'isAppOnline(networkOnline)'
+                    },
+                    "queue": {
+                        type: Array,
+                        value: JSON.parse(localStorage.getItem("pendingQueue")) || []
+                    },
+                    "queueDebug": {
+                        type: String,
+                        computed: 'calcQueueDebug(queue.splices)'
+                    },
+                    "goOnlineVisible": {
+                        type: Boolean,
+                        computed: 'isGoOnlineVisible(networkOnline)'
+                    }
+                }
+            }
+            connectedCallback() {
+                super.connectedCallback();
+                var self = this;
+                window.addEventListener("online", e => {
+                    this.networkOnline = navigator.onLine;
+                });
+                window.addEventListener("offline", e => {
+                    this.networkOnline = navigator.onLine;
+                });
+
+                if (!this.networkOnline) {
+                    this.restoreLocalTodos();
+                }
+            }
+
+            goOnline() {
+                // Reload will cause Flow to be started and the queue synced from localstorage
+                window.location.reload();
+            }
+            isGoOnlineVisible(networkOnline) {
+                // Started offline, now online. Need a refresh to sync 
+                // but doing it immediately would interrupt the user
+                return networkOnline && !this.appOnline;
+            }
+
+            onNetworkOnlineChange() {
+                if (!this.networkOnline) {
+                    return;
+                }
+                if (!this.appOnline) {
+                    // Started offline, now online. Need a refresh to sync 
+                    // but doing it immediately would interrupt the user
+                    return;
+                }
+                if (this.queue.length > 0) {
+                        this.processCommands(this.queue);
+                        localStorage.removeItem("pendingQueue");
+                        this.set("queue", []);
+                        this.$.info.open();
+                        this.$server.resync();
+                    }
+            }
+            isAppOnline(networkOnline) {
+                return networkOnline && this.flowStarted();
+            }
+            processCommands(commands) {
+                for (var i = 0; i < commands.length; i++) {
+                    const cmd = commands[i];
+                    if (cmd.cmd == "add") {
+                        this.$server.addTodo(cmd.text);
+                    } else if (cmd.cmd == "updateText") {
+                        this.$server.updateTodoText(cmd.todo, cmd.text);
+                    } else if (cmd.cmd == "markCompleted") {
+                        this.$server.markCompleted(cmd.todo, cmd.completed);
+                    } else if (cmd.cmd == "remove") {
+                        this.$server.removeTodo(cmd.todo);
+                    } else {
+                        console.error("Unknown command:" + cmd.cmd);
+                    }
+                }
+            }
+
+            executeOrQueue(command) {
+                if (this.appOnline) {
+                    this.processCommands([command]);
+                    return true;
+                } else {
+                    this.push("queue", command);
+                    localStorage.setItem("pendingQueue", JSON.stringify(this.queue));
+                    return false;
+                }
+            }
+
+            calcQueueDebug(splices) {
+                if (this.queue.length == 0)
+                    return "";
+                return "<ul><li>" + this.queue.map(cmd => {
+                    if (cmd.cmd == "add") {
+                        return "Add " + cmd.text;
+                    } else if (cmd.cmd == "updateText") {
+                        return "Update " + cmd.text + " to " + cmd.text;
+                    } else if (cmd.cmd == "markCompleted") {
+                        if (cmd.completed)
+                            return "Mark " + cmd.todo.text + " complete";
+                        else
+                            return "Mark " + cmd.todo.text + " active";
+                    } else if (cmd.cmd == "remove") {
+                        return "Remove " + cmd.todo.text;
+                    } else {
+                        return "???";
+                    }
+                    cmd.cmd + " " + cmd.text
+                }).join("<li>") + "</ul>";
+            }
+            clearCompleted() {
+                this.todos.filter(item => item.completed).forEach(item => {
+                    var sentToServer = this.executeOrQueue({ cmd: "remove", todo: item });
+                    if (!sentToServer) {
+                        this.splice("todos", this.todos.indexOf(item), 1);
+                    }
+                });
+            }
+            hasCompletedItems(todos) {
+                return this.todos.filter(item => item.completed).length > 0;
+            }
+            countItemsLeft(changeRecord) {
+                return this.todos.filter(item => !item.completed).length;
+            }
+            isFilter(filter) {
+                return this.filter == filter;
+            }
+            newTodoInput(e) {
+                if (e.code != "Enter")
+                    return;
+                const serverUpdated = this.executeOrQueue({ cmd: "add", text: e.target.value });
+                if (!serverUpdated) {
+                    this.push("todos", { text: e.target.value });
+                }
+                e.target.value = "";
+            }
+            editTodoText(e) {
+                if (e.code != "Enter")
+                    return;
+
+                this.executeOrQueue({ cmd: "updateText", todo: e.model.item, text: e.target.value });
+
+                e.target.blur();
+            }
+            removeTodo(e) {
+                const item = e.model.item;
+                const serverUpdated = this.executeOrQueue({ cmd: "remove", todo: item });
+                if (!serverUpdated) {
+                    this.splice("todos", this.todos.indexOf(item), 1);
+                }
+            }
+            markCompletedClick(e) {
+                const item = e.model.item;
+                this.markCompleted(item, e.target.checked);
+            }
+            markCompleted(item, completed) {
+                if (item.completed == completed)
+                    return;
+
+                this.executeOrQueue({ cmd: "markCompleted", todo: item, completed: completed });
+                this.set('todos.' + this.todos.indexOf(item) + '.completed', completed);
+            }
+            createFilter(filterString) {
+                return function (item) {
+                    return (filterString == "all"
+                        || (filterString == "active" && !item.completed)
+                        || (filterString == "completed" && item.completed)
+                    );
+                };
+            }
+            selectAll() {
+                const newState = (this.countItemsLeft() > 0);
+                this.todos.filter(item => item.completed != newState).forEach(item => this.markCompleted(item, newState));
+            }
+            filterAll() {
+                this.filterString = "all";
+            }
+            isAll(filterString) {
+                return filterString == "all";
+            }
+            filterActive() {
+                this.filterString = "active";
+            }
+            isActive(filterString) {
+                return filterString == "active";
+            }
+            filterCompleted() {
+                this.filterString = "completed";
+            }
+            isCompleted(filterString) {
+                return filterString == "completed";
+            }
+
+            flowStarted() {
+                return !!window.Vaadin.Flow;
+            }
+            storeTodosLocally() {
+                localStorage.setItem("todomvc-v10-items", JSON.stringify(this.todos));
+            }
+            restoreLocalTodos() {
+                var stored = JSON.parse(localStorage.getItem("todomvc-v10-items"));
+                if (stored) {
+                    this.set("todos", stored);
+                }
+            }
+        }
+        customElements.define(TodoMvc.is, TodoMvc);
+    </script>
+</dom-module>
