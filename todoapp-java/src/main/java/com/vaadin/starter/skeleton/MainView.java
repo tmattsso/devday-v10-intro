@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.function.Predicate;
 
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.Key;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.dependency.HtmlImport;
@@ -97,12 +98,13 @@ public class MainView extends VerticalLayout {
 		inputField.setPlaceholder("What needs to be done?");
 		add(inputField);
 
-		inputField.addValueChangeListener(e -> {
-			if (e.isFromClient()) {
-				addItem(e.getValue());
-			}
-		});
-		inputField.setValueChangeMode(ValueChangeMode.ON_CHANGE);
+//		inputField.addValueChangeListener(e -> {
+//			if (e.isFromClient()) {
+//				addItem(e.getValue());
+//			}
+//		});
+//		inputField.setValueChangeMode(ValueChangeMode.ON_BLUR);
+		inputField.addKeyDownListener(Key.ENTER, e->addItem(inputField.getValue()));
 
 		final HorizontalLayout header = new HorizontalLayout(selectAllChecbox, inputField);
 		header.setFlexGrow(1, inputField);
@@ -181,7 +183,8 @@ public class MainView extends VerticalLayout {
 
 	private void refresh() {
 
-		selectAllChecbox.setVisible(todos.size() > 0);
+		// don't remove from dom
+		selectAllChecbox.getStyle().set("visibility", todos.size() > 0 ? "visible" : "hidden");
 
 		refreshItems();
 		refreshFooter();

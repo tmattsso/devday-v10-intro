@@ -1,31 +1,26 @@
 package org.vaadin.artur.todomvc;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import org.vaadin.artur.todomvc.SharedTodos.Type;
-
-import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.ClientCallable;
 import com.vaadin.flow.component.Tag;
-import com.vaadin.flow.component.UIDetachedException;
 import com.vaadin.flow.component.dependency.HtmlImport;
-import com.vaadin.flow.component.page.Push;
 import com.vaadin.flow.component.page.Viewport;
+import com.vaadin.flow.component.polymertemplate.Id;
 import com.vaadin.flow.component.polymertemplate.PolymerTemplate;
+import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.server.InitialPageSettings;
-import com.vaadin.flow.server.PageConfigurator;
-import com.vaadin.flow.server.InitialPageSettings.Position;
-import com.vaadin.flow.server.InitialPageSettings.WrapMode;
 import com.vaadin.flow.templatemodel.TemplateModel;
 
 @Tag("todo-mvc")
 @HtmlImport("todo-mvc.html")
 @Route("")
 @Viewport("width=device-width, initial-scale=1.0")
-@Push
-public class TodoMvc extends PolymerTemplate<TodoMvc.TodoMvcModel> implements PageConfigurator {
+public class TodoMvc extends PolymerTemplate<TodoMvc.TodoMvcModel> {
+
+	private int nextId = 0;
 
 	public interface TodoMvcModel extends TemplateModel {
 
@@ -34,34 +29,39 @@ public class TodoMvc extends PolymerTemplate<TodoMvc.TodoMvcModel> implements Pa
 		void setTodos(List<Todo> todos);
 	}
 
-	@Override
-	protected void onAttach(AttachEvent attachEvent) {
-		super.onAttach(attachEvent);
-		SharedTodos.get().addListener(e -> {
-			try {
-				getUI().get().access(() -> {
-					if (e.getType() == Type.ADD) {
-						getModel().getTodos().add(e.getTodo());
-					} else if (e.getType() == Type.UPDATE) {
-						Optional<Todo> t = findTodo(e.getTodo());
-						if (t.isPresent()) {
-							t.get().setText(e.getTodo().getText());
-							t.get().setCompleted(e.getTodo().isCompleted());
-						}
-					} else if (e.getType() == Type.REMOVE) {
-						Optional<Todo> t = findTodo(e.getTodo());
-						if (t.isPresent()) {
-							getModel().getTodos().remove(t.get());
-						}
+	public TodoMvc() {
+		ArrayList<Todo> items = new ArrayList<Todo>();
+		items.add(new Todo("Something"));
+		items.add(new Todo("Another thing"));
+		items.add(new Todo("Done deal", true));
+		getModel().setTodos(items);
+	}
 
-					}
-				});
-			} catch (UIDetachedException ee) {
-				e.unregisterListener();
-			}
-		});
+	@ClientCallable
+	public void addTodo(String text) {
+		getModel().getTodos().add(new Todo(text, nextId++));
+	}
 
-		getModel().setTodos(SharedTodos.get().getTodos());
+	@ClientCallable
+	public void updateTodoText(Todo clientTodo, String text) {
+		Optional<Todo> todo = findTodo(clientTodo);
+		if (!todo.isPresent()) {
+			return;
+		}
+
+		System.out.println("Todo " + todo + " text updated to " + text);
+		todo.get().setText(text);
+	}
+
+	@ClientCallable
+	public void removeTodo(Todo clientTodo) {
+		Optional<Todo> todo = findTodo(clientTodo);
+		if (!todo.isPresent()) {
+			return;
+		}
+
+		System.out.println("Todo " + todo + " removed");
+		getModel().getTodos().remove(todo.get());
 	}
 
 	private Optional<Todo> findTodo(Todo clientTodo) {
@@ -69,37 +69,13 @@ public class TodoMvc extends PolymerTemplate<TodoMvc.TodoMvcModel> implements Pa
 	}
 
 	@ClientCallable
-	public void addTodo(String text) {
-		SharedTodos.get().addTodo(text);
-	}
-
-	@ClientCallable
-	public void updateTodoText(Todo clientTodo, String text) {
-		SharedTodos.get().updateTodo(clientTodo, text);
-	}
-
-	@ClientCallable
-	public void removeTodo(Todo clientTodo) {
-		SharedTodos.get().removeTodo(clientTodo);
-	}
-
-	@ClientCallable
 	public void markCompleted(Todo clientTodo, boolean completed) {
-		SharedTodos.get().updateTodo(clientTodo, completed);
+		Optional<Todo> todo = findTodo(clientTodo);
+		if (!todo.isPresent()) {
+			return;
+		}
+
+		System.out.println("Todo " + todo + " marked as complete=" + completed);
+		todo.get().setCompleted(completed);
 	}
-
-	@ClientCallable
-	public void resync() {
-		// Needed because of https://github.com/vaadin/flow/issues/4080
-		getModel().setTodos(getModel().getTodos());
-	}
-
-	@Override
-	public void configurePage(InitialPageSettings settings) {
-		settings.addLink(Position.PREPEND, "manifest", "todomvc.webmanifest");
-		settings.addInlineWithContents("if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');",
-				WrapMode.JAVASCRIPT);
-
-	}
-
 }
