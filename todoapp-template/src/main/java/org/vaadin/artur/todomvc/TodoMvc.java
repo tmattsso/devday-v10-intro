@@ -13,11 +13,14 @@ import com.vaadin.flow.component.polymertemplate.PolymerTemplate;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.templatemodel.TemplateModel;
+import com.vaadin.flow.theme.Theme;
+import com.vaadin.flow.theme.lumo.Lumo;
 
 @Tag("todo-mvc")
 @HtmlImport("todo-mvc.html")
 @Route("")
 @Viewport("width=device-width, initial-scale=1.0")
+@Theme(Lumo.class)
 public class TodoMvc extends PolymerTemplate<TodoMvc.TodoMvcModel> {
 
 	private int nextId = 0;
@@ -48,8 +51,6 @@ public class TodoMvc extends PolymerTemplate<TodoMvc.TodoMvcModel> {
 		if (!todo.isPresent()) {
 			return;
 		}
-
-		System.out.println("Todo " + todo + " text updated to " + text);
 		todo.get().setText(text);
 	}
 
@@ -59,8 +60,6 @@ public class TodoMvc extends PolymerTemplate<TodoMvc.TodoMvcModel> {
 		if (!todo.isPresent()) {
 			return;
 		}
-
-		System.out.println("Todo " + todo + " removed");
 		getModel().getTodos().remove(todo.get());
 	}
 
@@ -74,8 +73,6 @@ public class TodoMvc extends PolymerTemplate<TodoMvc.TodoMvcModel> {
 		if (!todo.isPresent()) {
 			return;
 		}
-
-		System.out.println("Todo " + todo + " marked as complete=" + completed);
 		todo.get().setCompleted(completed);
 	}
 }
