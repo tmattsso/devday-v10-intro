@@ -25,11 +25,11 @@ public class TodoLine extends HorizontalLayout {
 		checkBox = new Checkbox(t.isDone());
 		nameText = new Paragraph(t.getName());
 
-		final Button delete = new Button(VaadinIcons.TRASH.create());
-		delete.addClassName("delete");
-		delete.getElement().setAttribute("theme", "tertiary");
+		final Button deleteButton = new Button(VaadinIcons.TRASH.create());
+		deleteButton.addClassName("delete");
+		deleteButton.getElement().setAttribute("theme", "tertiary");
 
-		add(checkBox, nameText, delete);
+		add(checkBox, nameText, deleteButton);
 		setSpacing(true);
 		setWidth("100%");
 		setFlexGrow(2, nameText);
@@ -42,8 +42,8 @@ public class TodoLine extends HorizontalLayout {
 			updateStyles();
 			updateFunction.run();
 		});
-		delete.addClickListener(e -> deleteFunction.accept(todo));
-
+		
+		deleteButton.addClickListener(e -> deleteFunction.accept(todo));
 	}
 
 	private void updateStyles() {

@@ -82,7 +82,6 @@ public class MainView extends VerticalLayout {
 		add(wrapper);
 
 		refresh();
-
 	}
 
 	private Component buildHeader() {
@@ -103,7 +102,7 @@ public class MainView extends VerticalLayout {
 				addItem(e.getValue());
 			}
 		});
-		inputField.setValueChangeMode(ValueChangeMode.ON_BLUR);
+		inputField.setValueChangeMode(ValueChangeMode.ON_CHANGE);
 
 		final HorizontalLayout header = new HorizontalLayout(selectAllChecbox, inputField);
 		header.setFlexGrow(1, inputField);
@@ -182,8 +181,7 @@ public class MainView extends VerticalLayout {
 
 	private void refresh() {
 
-		// don't remve from dom
-		selectAllChecbox.getStyle().set("visibility", todos.size() > 0 ? "visible" : "hidden");
+		selectAllChecbox.setVisible(todos.size() > 0);
 
 		refreshItems();
 		refreshFooter();
@@ -201,8 +199,7 @@ public class MainView extends VerticalLayout {
 
 		final long completedCount = todos.stream().filter(modeMap.get(Mode.COMPLETED)).count();
 
-		// don't remve from dom
-		clearCompletedButton.getStyle().set("visibility", completedCount > 0 ? "visible" : "hidden");
+		clearCompletedButton.setVisible(completedCount > 0 );
 	}
 
 	private void refreshItems() {
