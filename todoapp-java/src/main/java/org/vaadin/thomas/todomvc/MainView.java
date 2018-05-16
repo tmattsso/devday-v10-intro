@@ -1,4 +1,4 @@
-package com.vaadin.starter.skeleton;
+package org.vaadin.thomas.todomvc;
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -8,6 +8,7 @@ import java.util.function.Predicate;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.Key;
+import com.vaadin.flow.component.Tag;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.dependency.HtmlImport;
@@ -21,7 +22,6 @@ import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.Theme;
 import com.vaadin.flow.theme.lumo.Lumo;
-import com.vaadin.starter.data.Todo;
 
 /**
  * The main view contains a button and a template element.
@@ -76,11 +76,18 @@ public class MainView extends VerticalLayout {
 
 		itemsLayout = new VerticalLayout();
 		itemsLayout.setWidth("500px");
+		itemsLayout.setSpacing(false);
+		itemsLayout.setPadding(false);
 		wrapper.add(itemsLayout);
 
 		wrapper.add(buildFooter());
 
 		add(wrapper);
+		
+		todos.add(new Todo("Something"));
+		todos.add(new Todo("Another thing"));
+		todos.add(new Todo("Done deal"));
+		todos.get(2).setDone(true);
 
 		refresh();
 	}
@@ -98,17 +105,11 @@ public class MainView extends VerticalLayout {
 		inputField.setPlaceholder("What needs to be done?");
 		add(inputField);
 
-//		inputField.addValueChangeListener(e -> {
-//			if (e.isFromClient()) {
-//				addItem(e.getValue());
-//			}
-//		});
-//		inputField.setValueChangeMode(ValueChangeMode.ON_BLUR);
 		inputField.addKeyDownListener(Key.ENTER, e->addItem(inputField.getValue()));
 
 		final HorizontalLayout header = new HorizontalLayout(selectAllChecbox, inputField);
 		header.setFlexGrow(1, inputField);
-		header.setWidth("100%");
+		header.setWidth("500px");
 		header.setSpacing(true);
 		header.setDefaultVerticalComponentAlignment(Alignment.CENTER);
 
@@ -202,7 +203,7 @@ public class MainView extends VerticalLayout {
 
 		final long completedCount = todos.stream().filter(modeMap.get(Mode.COMPLETED)).count();
 
-		clearCompletedButton.setVisible(completedCount > 0 );
+		clearCompletedButton.getStyle().set("visibility", completedCount > 0 ? "visible" : "hidden");
 	}
 
 	private void refreshItems() {

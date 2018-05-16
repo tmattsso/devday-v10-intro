@@ -7,46 +7,62 @@
 <link rel="import" href="bower_components/vaadin-ordered-layout/src/vaadin-vertical-layout.html">
 <link rel="import" href="bower_components/vaadin-icons/vaadin-icons.html">
 
-<link rel="import" href="styles/shared-styles.html">
-
 <dom-module id="todo-mvc">
     <template>
-        <h1 style="text-align: center;">todos</h1>
-        <vaadin-vertical-layout style="width: 100%; align-items: center;" class="main-layout" theme="padding spacing">
-        <vaadin-vertical-layout style="width: 100%;max-width: 600px;">
-            <vaadin-horizontal-layout style="width: 100%;align-items: center;">
-                <vaadin-checkbox on-checked-changed="selectAll"></vaadin-checkbox>
-                <vaadin-text-field style="flex: 1" placeholder="What needs to be done?" on-keyup="newTodoInput"></vaadin-text-field>
-            </vaadin-horizontal-layout>
-            <template is="dom-repeat" items="{{todos}}" filter="{{createFilter(filterString)}}" observe="completed">
-                <vaadin-horizontal-layout style="width: 100%; align-items: center;" id="vaadinHorizontalLayout" class="todo-line">
-                    <vaadin-checkbox checked="[[item.completed]]" on-checked-changed="markCompletedClick"></vaadin-checkbox>
-                    <vaadin-text-field style="flex:1" value="{{item.text}}" id="vaadinTextField" on-keyup="editTodoText"></vaadin-text-field>
-                    <vaadin-button on-click="removeTodo" class="delete">
-                        <iron-icon icon="vaadin:trash"></iron-icon>
-                    </vaadin-button>
-                </vaadin-horizontal-layout>
-            </template>
-            <div style="width: 100%;">
-                {{itemsLeft}} items left
-                <vaadin-horizontal-layout style="flex: 1" id="filterControls">
-                    <vaadin-button on-click="filterAll" disabled="{{isAll(filterString)}}">
-                        All
-                    </vaadin-button>
-                    <vaadin-button on-click="filterActive" disabled="{{isActive(filterString)}}">
-                        Active
-                    </vaadin-button>
-                    <vaadin-button on-click="filterCompleted" disabled="{{isCompleted(filterString)}}">
-                        Completed
-                    </vaadin-button>
-                </vaadin-horizontal-layout>
-                <vaadin-button hidden$="{{!hasCompletedItems(todos.*)}}" on-click="clearCompleted">
-                    Clear completed
-                </vaadin-button>
-            </div>
-        </vaadin-vertical-layout>
-         </vaadin-vertical-layout>
-    </template>
+<style>
+    
+.todo-line {
+	position:relative;
+}
+
+.todo-line vaadin-button.delete {
+	visibility: hidden;
+	position: absolute;
+	right: 0;
+	top: 1px;
+}
+
+.todo-line:hover vaadin-button.delete {
+	visibility: visible;
+}
+
+</style>
+<vaadin-vertical-layout style="width: 100%; align-items: center;" class="main-layout" theme="padding spacing">
+ <h1 style="text-align: center;">todos</h1>
+ <vaadin-vertical-layout style="width: 100%;max-width: 500px;" theme="spacing">
+  <vaadin-horizontal-layout style="width: 100%;align-items: center;">
+   <vaadin-checkbox on-checked-changed="selectAll"></vaadin-checkbox>
+   <vaadin-text-field style="flex: 1" placeholder="What needs to be done?" on-keyup="newTodoInput"></vaadin-text-field>
+  </vaadin-horizontal-layout>
+  <template is="dom-repeat" items="{{todos}}" filter="{{createFilter(filterString)}}" observe="completed">
+   <vaadin-horizontal-layout style="width: 100%; align-items: center;" id="vaadinHorizontalLayout" class="todo-line">
+    <vaadin-checkbox checked="[[item.completed]]" on-checked-changed="markCompletedClick"></vaadin-checkbox>
+    <vaadin-text-field style="flex:1" value="{{item.text}}" id="vaadinTextField" on-keyup="editTodoText"></vaadin-text-field>
+    <vaadin-button on-click="removeTodo" class="delete" theme="tertiary">
+     <iron-icon icon="vaadin:trash"></iron-icon>
+    </vaadin-button>
+   </vaadin-horizontal-layout>
+  </template>
+  <vaadin-horizontal-layout style="justify-content: space-between; align-items: center; width: 100%;">
+   <span>{{itemsLeft}} items left</span>
+   <vaadin-horizontal-layout style="flex: 0" id="filterControls" theme="spacing">
+    <vaadin-button on-click="filterAll" disabled="{{isAll(filterString)}}" theme="tertiary">
+      All 
+    </vaadin-button>
+    <vaadin-button on-click="filterActive" disabled="{{isActive(filterString)}}" theme="tertiary">
+      Active 
+    </vaadin-button>
+    <vaadin-button on-click="filterCompleted" disabled="{{isCompleted(filterString)}}" theme="tertiary">
+      Completed 
+    </vaadin-button>
+   </vaadin-horizontal-layout>
+   <vaadin-button hidden$="{{!hasCompletedItems(todos.*)}}" on-click="clearCompleted" theme="tertiary">
+     Clear completed 
+   </vaadin-button>
+  </vaadin-horizontal-layout>
+ </vaadin-vertical-layout>
+</vaadin-vertical-layout>
+</template>
     <script>
         class TodoMvc extends Polymer.Element {
             static get is() {
@@ -80,14 +96,12 @@
             newTodoInput(e) {
                 if (e.code != "Enter")
                     return;
-
                 this.$server.addTodo(e.target.value);
                 e.target.value="";
             }
             editTodoText(e) {
                 if (e.code != "Enter")
                     return;
-
                 this.$server.updateTodoText(e.model.item, e.target.value);
                 e.target.blur();
             }
@@ -114,7 +128,6 @@
                 };
             }
             selectAll() {
-
                 if(this.todos){
                	 const newState = (this.countItemsLeft() > 0);
                	 this.todos.filter(item => item.completed != newState).forEach(item => this.markCompleted(item, newState));

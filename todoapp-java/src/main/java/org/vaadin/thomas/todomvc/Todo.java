@@ -1,4 +1,4 @@
-package com.vaadin.starter.data;
+package org.vaadin.thomas.todomvc;
 
 public class Todo {
 

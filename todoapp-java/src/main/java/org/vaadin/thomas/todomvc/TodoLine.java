@@ -1,4 +1,4 @@
-package com.vaadin.starter.skeleton;
+package org.vaadin.thomas.todomvc;
 
 import java.util.function.Consumer;
 
@@ -7,14 +7,14 @@ import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.icon.VaadinIcons;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
-import com.vaadin.starter.data.Todo;
+import com.vaadin.flow.component.textfield.TextField;
 
 public class TodoLine extends HorizontalLayout {
 
 	private static final long serialVersionUID = -670798909345627146L;
 
 	private final Checkbox checkBox;
-	private final Paragraph nameText;
+	private final TextField nameText;
 	private final Todo todo;
 
 	public TodoLine(Todo t, Runnable updateFunction, Consumer<Todo> deleteFunction) {
@@ -23,7 +23,8 @@ public class TodoLine extends HorizontalLayout {
 
 		todo = t;
 		checkBox = new Checkbox(t.isDone());
-		nameText = new Paragraph(t.getName());
+		nameText = new TextField();
+		nameText.setValue(t.getName());
 
 		final Button deleteButton = new Button(VaadinIcons.TRASH.create());
 		deleteButton.addClassName("delete");
@@ -38,9 +39,13 @@ public class TodoLine extends HorizontalLayout {
 		updateStyles();
 
 		checkBox.addValueChangeListener(e -> {
-			t.setDone(e.getValue());
+			todo.setDone(e.getValue());
 			updateStyles();
 			updateFunction.run();
+		});
+		
+		nameText.addValueChangeListener(e->{
+			todo.setName(e.getValue());
 		});
 		
 		deleteButton.addClickListener(e -> deleteFunction.accept(todo));
