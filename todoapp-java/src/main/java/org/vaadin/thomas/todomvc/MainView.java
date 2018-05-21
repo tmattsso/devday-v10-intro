@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 
+import org.vaadin.thomas.todomvc.components.ToggleButton;
+
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.Key;
 import com.vaadin.flow.component.Tag;
@@ -71,6 +73,10 @@ public class MainView extends VerticalLayout {
 		final H1 header = new H1("todos");
 		header.addClassName("header");
 		wrapper.add(header);
+
+		// ToggleButton tb = new ToggleButton();
+		// wrapper.add(tb);
+		// tb.setChecked(true);
 
 		wrapper.add(buildHeader());
 
