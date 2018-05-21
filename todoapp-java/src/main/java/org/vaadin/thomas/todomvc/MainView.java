@@ -83,7 +83,7 @@ public class MainView extends VerticalLayout {
 		wrapper.add(buildFooter());
 
 		add(wrapper);
-		
+
 		todos.add(new Todo("Something"));
 		todos.add(new Todo("Another thing"));
 		todos.add(new Todo("Done deal"));
@@ -105,7 +105,7 @@ public class MainView extends VerticalLayout {
 		inputField.setPlaceholder("What needs to be done?");
 		add(inputField);
 
-		inputField.addKeyDownListener(Key.ENTER, e->addItem(inputField.getValue()));
+		inputField.addKeyDownListener(Key.ENTER, e -> addItem(inputField.getValue()));
 
 		final HorizontalLayout header = new HorizontalLayout(selectAllChecbox, inputField);
 		header.setFlexGrow(1, inputField);
